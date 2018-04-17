@@ -1,3 +1,4 @@
+//branch 1 created
 //
 //  ViewController.swift
 //  Todoey
@@ -7,21 +8,23 @@
 //
 
 import UIKit
+import CoreData
 
-class ToDoListViewController: UITableViewController {
+class ToDoListViewController: UITableViewController, UISearchBarDelegate {
     
-    var itemArray = [Items]()
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    var itemArray = [Item]()
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     let arrayKey = "ToDoListArray"
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
+//        print(dataFilePath)
         
-        print(dataFilePath)
-        
-       loadDataUsingNSDecoder()
+       loadData()
         
         
 //        if let items = defaults.array(forKey: arrayKey) as? [Items]{
@@ -54,7 +57,7 @@ class ToDoListViewController: UITableViewController {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
-        saveDataUsingNSCoder()
+        saveData()
         
         tableView.deselectRow(at: indexPath, animated: true)
     }
@@ -65,13 +68,15 @@ class ToDoListViewController: UITableViewController {
         var textField = UITextField()
         let alert = UIAlertController(title: "Add new Item", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "Add", style: .default) { (action) in
-            let newItem = Items()
+            
+            let newItem = Item(context: self.context)
             if let newValue = textField.text {
                 newItem.title = newValue
+                newItem.done = false
             }
             self.itemArray.append(newItem)
             
-            self.saveDataUsingNSCoder()
+            self.saveData()
             
         }
         
@@ -84,29 +89,29 @@ class ToDoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
-    func saveDataUsingNSCoder () {
-        let encoder = PropertyListEncoder()
+    func saveData () {
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
         } catch {
-            print("Error encoding item array : \(error)")
+            print("Error saving context : \(error)")
         }
         tableView.reloadData()
         
     }
     
-    func loadDataUsingNSDecoder() {
-        if let data = try? Data(contentsOf: dataFilePath!){
-            let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([Items].self, from: data)
-            } catch {
-                print("Error while decoding data : \(error)")
-            }
+    func loadData() {
+        let request : NSFetchRequest<Item> = Item.fetchRequest()
+        do {
+            itemArray = try context.fetch(request)
+
+        } catch {
+            print("Error : \(error)")
         }
     }
     
+//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+//        
+//    }
 
 
 }
